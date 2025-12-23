@@ -7,61 +7,110 @@ using UnityEngine.EventSystems;
 
 public class MainMenu : MonoBehaviour
 {
+    [Header("UI Components")]
     public Button[] buttons;
 
     [Header("Buttons Sounds")]
     public AudioSource buttonRollover;
     public AudioSource buttonClick;
 
+    [Header("Modern UI Settings")]
+    public float animationSpeed = 15f;
+    public float hoverScale = 1.1f;
+    public float clickScale = 0.95f;
+    public bool useStaggeredEntrance = true;
+
     void Start()
     {
-        AddButtonsTriggers();
-    }
+        SetupModernButtons();
 
-    // Start is called before the first frame update
-    public void LevelSelect(int level)
-    {
-        SceneManager.LoadScene(level);
-    }
-
-    void AddButtonsTriggers()
-    {
-        buttons = transform.GetComponentsInChildren<Button>();
-        for (int i = 0; i < buttons.Length; i++)
+        if (useStaggeredEntrance)
         {
-            EventTrigger btnETrigger = buttons[i].gameObject.AddComponent<EventTrigger>();
-            // Adding Hover Trigger
-            EventTrigger.Entry hoverEntry = new EventTrigger.Entry();
-            hoverEntry.eventID = EventTriggerType.PointerEnter;
-            hoverEntry.callback.AddListener((data) => {OnButtonHover();});
-            btnETrigger.triggers.Add(hoverEntry);
-            // Adding Click Trigger
-            EventTrigger.Entry clickEntry = new EventTrigger.Entry();
-            clickEntry.eventID = EventTriggerType.PointerDown;
-            clickEntry.callback.AddListener((data) => {OnButtonClick();});
-            btnETrigger.triggers.Add(clickEntry);            
+            StartCoroutine(PlayEntranceAnimation());
         }
     }
 
-    public void OnButtonHover()
+    private void SetupModernButtons()
     {
-        buttonRollover.Play();
+        if (buttons == null || buttons.Length == 0)
+            buttons = transform.GetComponentsInChildren<Button>();
+
+        foreach (var btn in buttons)
+        {
+            if (btn == null) continue;
+            
+            ModernMenuButton modernBtn = btn.gameObject.GetComponent<ModernMenuButton>();
+            if (modernBtn == null)
+            {
+                modernBtn = btn.gameObject.AddComponent<ModernMenuButton>();
+            }
+            modernBtn.Initialize(buttonRollover, buttonClick, hoverScale, clickScale, animationSpeed);
+        }
     }
 
-    public void OnButtonClick()
+    private IEnumerator PlayEntranceAnimation()
     {
-        buttonClick.Play();
+        foreach (var btn in buttons)
+        {
+            if(btn != null) btn.transform.localScale = Vector3.zero;
+        }
+
+        foreach (var btn in buttons)
+        {
+            if (btn != null)
+            {
+                StartCoroutine(AnimateScale(btn.transform, Vector3.one));
+                yield return new WaitForSeconds(0.1f);
+            }
+        }
+    }
+
+    public IEnumerator AnimateScale(Transform target, Vector3 endScale)
+    {
+        Vector3 startScale = target.localScale;
+        float t = 0;
+        while (t < 1f)
+        {
+            t += Time.deltaTime * animationSpeed;
+            target.localScale = Vector3.Lerp(startScale, endScale, t);
+            yield return null;
+        }
+        target.localScale = endScale;
+    }
+
+    public void PlayHoverSound()
+    {
+        if (buttonRollover != null) buttonRollover.Play();
+    }
+
+    public void PlayClickSound()
+    {
+        if (buttonClick != null) buttonClick.Play();
+    }
+
+    public void LevelSelect(int level)
+    {
+        PlayClickSound();
+        StartCoroutine(DelayedLoadScene(level));
     }
 
     public void OptionsButton()
     {
+        PlayClickSound();
         PlayerPrefs.SetString("previous-scene", SceneManager.GetActiveScene().name);
         SceneManager.LoadScene("Options");
     }
 
     public void ExitButton()
     {
+        PlayClickSound();
         Debug.Log("Exited");
         Application.Quit();
+    }
+
+    IEnumerator DelayedLoadScene(int level)
+    {
+        yield return new WaitForSeconds(0.15f);
+        SceneManager.LoadScene(level);
     }
 }
