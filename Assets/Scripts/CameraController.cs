@@ -34,15 +34,26 @@ public class CameraController : MonoBehaviour
             mouseDown = true;
         if (Input.GetMouseButtonUp(1))
             mouseDown = false;
-        if (mouseDown)
+        bool isMobileTouch = (MobileInput.Instance != null && MobileInput.Instance.IsTouchingField);
+
+        if (mouseDown || isMobileTouch)
         {
-            if (Input.GetAxis("Mouse X") != 0 || Input.GetAxis("Mouse Y") != 0)
+            float inputX = Input.GetAxis("Mouse X");
+            float inputY = Input.GetAxis("Mouse Y");
+
+            if (isMobileTouch)
             {
-                localRotation.x += Input.GetAxis("Mouse X") * mouseSensitivity;
+                inputX += MobileInput.Instance.LookX; 
+                inputY += MobileInput.Instance.LookY;
+            }
+
+            if (inputX != 0 || inputY != 0)
+            {
+                localRotation.x += inputX * mouseSensitivity;
                 if (isInverted)
-                    localRotation.y += Input.GetAxis("Mouse Y") * mouseSensitivity;
+                    localRotation.y += inputY * mouseSensitivity;
                 else
-                    localRotation.y -= Input.GetAxis("Mouse Y") * mouseSensitivity;
+                    localRotation.y -= inputY * mouseSensitivity;
                 localRotation.y = Mathf.Clamp(localRotation.y, -60, 80);
             }
         }

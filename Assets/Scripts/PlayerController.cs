@@ -39,9 +39,16 @@ public class PlayerController : MonoBehaviour
         float xDisplacement = Input.GetAxis("Horizontal");
         float zDisplacement = Input.GetAxis("Vertical");
 
+        // Mobile Input Override
+        if (MobileInput.Instance != null)
+        {
+            xDisplacement += MobileInput.Instance.Horizontal;
+            zDisplacement += MobileInput.Instance.Vertical;
+        }
+
         // Determine current speed based on Shift key
         float currentSpeed = speed;
-        if (Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift))
+        if (Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift) || (MobileInput.Instance != null && MobileInput.Instance.Sprint))
         {
             currentSpeed = runSpeed;
         }
@@ -54,7 +61,7 @@ public class PlayerController : MonoBehaviour
         {
             animator.SetBool("isFalling", false);
             moveDirection = new Vector3(xDisplacement * currentSpeed, 0, zDisplacement * currentSpeed);
-            if (Input.GetKeyDown(KeyCode.Space))
+            if (Input.GetKeyDown(KeyCode.Space) || (MobileInput.Instance != null && MobileInput.Instance.GetJumpDown()))
             {
                 moveDirection.y = jumpSpeed;
                 animator.SetTrigger("isJumping");
